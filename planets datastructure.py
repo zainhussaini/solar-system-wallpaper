@@ -133,7 +133,7 @@ foreground = (249, 123, 35)
 image = Image.new('RGBA', (3440, 1440), background)
 
 """ draw stars """
-for i in range(1000):
+for i in range(2000):
     x = np.random.randint(0, 3440)
     y = np.random.randint(0, 1440)
     image.putpixel((x, y), (255, 255, 255))
@@ -177,5 +177,5 @@ for i in range(len(dists_scale)):
         # draw.line((location, 1440-25, location, 1440), fill=foreground)
         draw.line((location, 25, location, 0), fill=foreground)
 
-image.show()
-# image.save('wallpaper.png')
+# image.show()
+image.save('wallpaper.png')
