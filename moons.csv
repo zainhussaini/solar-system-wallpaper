@@ -1,0 +1,19 @@
+MOON,PLANET,RADIUS (km),DIST FROM PLANET (km)
+Moon,Earth,1737.10,384399.00
+Io,Jupiter,1815.00,421600.00
+Europa,Jupiter,1568.00,670900.00
+Ganymede,Jupiter,2634.10,1070400.00
+Callisto,Jupiter,2410.30,1882700.00
+Mimas,Saturn,198.30,185520.00
+Enceladus,Saturn,252.10,237948.00
+Thethys,Saturn,533.00,294619.00
+Dione,Saturn,561.70,377396.00
+Rhea,Saturn,764.30,527108.00
+Titan,Saturn,2576.00,1221870.00
+Iapetus,Saturn,735.60,3560820.00
+Miranda,Uranus,235.80,129390.00
+Ariel,Uranus,578.90,190900.00
+Umbriel,Uranus,584.70,266000.00
+Titania,Uranus,788.90,436300.00
+Oberon,Uranus,761.40,583519.00
+Triton,Neptune,1353.40,354759.00
