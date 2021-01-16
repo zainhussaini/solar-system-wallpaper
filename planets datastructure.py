@@ -82,10 +82,6 @@ print(dist_s, dist_h)
 centers = dist_s*np.power(planet_dist, dist_power) + dist_h
 centers = np.insert(centers, 0, dist_h)
 
-interval = 1e8
-dists = np.arange(0, int(planet_dist[-1]/interval)*2)*1e8
-dists_scale = dist_s*np.power(dists, dist_power) + dist_h
-
 radii_power = 1
 A = np.array([[np.power(planet_radius[0], radii_power), 1], [np.power(planet_radius[4], radii_power), 1]])
 b = np.array([[10], [125]])
@@ -101,6 +97,7 @@ radii = np.insert(radii, 0, radius_s*np.power(sun_radius, radii_power) + radius_
 # print(planet_dist[-1])
 
 """ moons """
+moon_dist_power = 0.45
 moon_radii = [[]]*8
 moon_dists = [[]]*8
 for i in range(8):
@@ -115,12 +112,10 @@ for i in range(8):
 
 min_planet_dist = moon_dists[6][0]
 max_planet_dist = moon_dists[5][6]
-A = np.array([[np.power(min_planet_dist, dist_power), 1], [np.power(max_planet_dist, dist_power), 1]])
-b = np.array([[100], [500]])
-res = np.linalg.inv(A) @ b
-moon_dist_s = res[0, 0]
-moon_dist_h = res[1, 0]
+moon_dist_s = 600*np.power(max_planet_dist, -moon_dist_power)
+moon_dist_h = 0
 print(moon_dist_s, moon_dist_h)
+# exit()
 
 # account for sun
 moon_radii = [[]] + moon_radii
@@ -152,7 +147,10 @@ for i in range(centers.shape[0]):
 
     for j in range(len(moon_radii[i])):
         moon_center_x = centers[i]
-        moon_center_y = 720 + moon_dist_s*np.power(moon_dists[i][j], dist_power) + moon_dist_h
+        if (i+j)%2 == 0:
+            moon_center_y = 720 + moon_dist_s*np.power(moon_dists[i][j], moon_dist_power) + moon_dist_h
+        else:
+            moon_center_y = 720 - moon_dist_s*np.power(moon_dists[i][j], moon_dist_power) - moon_dist_h
         moon_radius = radius_s*np.power(moon_radii[i][j], radii_power) + radius_h
         print(moon_center_x, moon_center_y)
 
@@ -167,6 +165,9 @@ for i in range(centers.shape[0]):
 
 
 """ draw scale """
+interval = 1e8
+dists = np.arange(0, int(planet_dist[-1]/interval)*2)*interval
+dists_scale = dist_s*np.power(dists, dist_power) + dist_h
 for i in range(len(dists_scale)):
     location = round(dists_scale[i])
     draw = ImageDraw.Draw(image)
@@ -176,6 +177,21 @@ for i in range(len(dists_scale)):
     else:
         # draw.line((location, 1440-25, location, 1440), fill=foreground)
         draw.line((location, 25, location, 0), fill=foreground)
+
+interval = 1e5
+moon_dists = np.arange(0, int(max_planet_dist/interval)*2)*interval
+moon_dists_scale = moon_dist_s*np.power(moon_dists, moon_dist_power) + moon_dist_h
+moon_dists_scale = [value for value in moon_dists_scale if value >= 0]
+print(moon_dists_scale)
+for i in range(len(moon_dists_scale)):
+    location = round(moon_dists_scale[i])
+    draw = ImageDraw.Draw(image)
+    if i%10 == 0:
+        draw.line((50, 720-location, 0, 720-location), fill=foreground)
+        draw.line((50, 720+location, 0, 720+location), fill=foreground)
+    else:
+        draw.line((25, 720-location, 0, 720-location), fill=foreground)
+        draw.line((25, 720+location, 0, 720+location), fill=foreground)
 
 # image.show()
 image.save('wallpaper.png')
