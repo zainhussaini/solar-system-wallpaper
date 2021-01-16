@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -116,7 +117,7 @@ for i in range(centers.shape[0]):
     bound = (centers[i]-radii[i], 1440/2-radii[i], centers[i]+radii[i], 1440/2+radii[i])
     draw.ellipse(bound, fill = "white", outline = "white")
 
-    width = 8 # width of circles
+    width = 4 # width of circles
     draw = ImageDraw.Draw(image)
     bound = (centers[i]-radii[i]+width, 1440/2-radii[i]+width, centers[i]+radii[i]-width, 1440/2+radii[i]-width)
     draw.ellipse(bound, fill = background, outline = background)
