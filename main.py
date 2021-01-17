@@ -86,17 +86,12 @@ class WallpaperImage:
 class CoordinateMapper:
     def __init__(self, px0, py0):
         """px0 is pixel corresponding to 0 x location, similar for py0"""
-        self.sr = None
         self.dx = px0
         self.sx = None
         self.ex = None
         self.dy = py0
         self.sy = None
         self.ey = None
-
-    def calc_r(self, pr, ar):
-        """Calculates radius mapping from pixel radius and real radius"""
-        self.sr = pr/ar
 
     def calc_x(self, px1, ax1, px2, ax2):
         A = np.array([
@@ -123,13 +118,13 @@ class CoordinateMapper:
     def pixel_to_real(self, px, py, pr):
         ax = np.power((px - self.dx)/self.sx, 1/self.ex)
         ay = np.power((py - self.dy)/self.sy, 1/self.ey)
-        ar = pr/self.sr
+        ar = np.power(py/self.sy, 1/self.ey)
         return (ax, ay, ar)
 
     def real_to_pixel(self, ax, ay, ar):
         px = self.dx + self.sx*np.power(ax, self.ex)
         py = self.dy + self.sy*np.power(ay, self.ey)
-        pr = self.sr*ar
+        pr = self.sy*np.power(ar, self.ey)
         return (px, py, pr)
 
 
@@ -160,9 +155,13 @@ for index, row in df_moons.iterrows():
 
 """ initialize mapper """
 mapper = CoordinateMapper(200, 720)
-mapper.calc_r(150, df_planets["RADIUS (km)"]["Jupiter"])
-mapper.calc_x(400, df_planets["DIST FROM SUN (km)"]["Mercury"], 3000, df_planets["DIST FROM SUN (km)"]["Neptune"])
-mapper.calc_y(720+200, df_moons["DIST FROM PLANET (km)"]["Miranda"], 720+600, df_moons["DIST FROM PLANET (km)"]["Iapetus"])
+# mapper.calc_r(150, df_planets["RADIUS (km)"]["Jupiter"])
+mapper.calc_x(
+    400, df_planets["DIST FROM SUN (km)"]["Mercury"],
+    3000, df_planets["DIST FROM SUN (km)"]["Neptune"])
+mapper.calc_y(
+    720+100, df_planets["RADIUS (km)"]["Jupiter"],
+    720+600, df_moons["DIST FROM PLANET (km)"]["Iapetus"])
 
 
 """ make image """
@@ -191,7 +190,7 @@ pxs = [mapper.real_to_pixel(ax, 0, 0)[0] for ax in axs]
 image.draw_scale_top(pxs, 20, 50)
 
 # draw right scale
-ones_y = 3e5
+ones_y = 1e5
 max_ay = mapper.pixel_to_real(mapper.dx, 1440, 0)[1]
 ays = np.arange(0, max_ay, ones_y)
 pys = [mapper.real_to_pixel(0, ay, 0)[1] - 720 for ay in ays]
