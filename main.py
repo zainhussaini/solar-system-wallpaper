@@ -39,13 +39,22 @@ class WallpaperImage:
         self.draw_circle(pixel_x, pixel_y, pixel_r, True)
         self.draw_circle(pixel_x, pixel_y, pixel_r - thickness, False)
 
+    # def draw_scale_top(self, pixels_x, height_ones, height_tens):
+    #     draw = ImageDraw.Draw(self.image)
+    #     for i, pixel_x in enumerate(pixels_x):
+    #         if i%10 == 0:
+    #             draw.line((pixel_x, 0, pixel_x, height_tens), fill=WallpaperImage.foreground)
+    #         else:
+    #             draw.line((pixel_x, 0, pixel_x, height_ones), fill=WallpaperImage.foreground)
+
     def draw_scale_top(self, pixels_x, height_ones, height_tens):
         draw = ImageDraw.Draw(self.image)
         for i, pixel_x in enumerate(pixels_x):
             if i%10 == 0:
-                draw.line((pixel_x, 0, pixel_x, height_tens), fill=WallpaperImage.foreground)
+                draw.line((pixel_x, 720-height_tens/2, pixel_x, 720+height_tens/2), fill=WallpaperImage.foreground)
             else:
-                draw.line((pixel_x, 0, pixel_x, height_ones), fill=WallpaperImage.foreground)
+                draw.line((pixel_x, 720-height_ones/2, pixel_x, 720+height_ones/2), fill=WallpaperImage.foreground)
+        draw.line((200, 720, 3440, 720), fill=WallpaperImage.foreground)
 
     def draw_scale_right(self, pixels_y, height_ones, height_tens):
         draw = ImageDraw.Draw(self.image)
@@ -56,16 +65,16 @@ class WallpaperImage:
                 height = height_ones
 
             draw.line((
-                self.image_width - height,
+                200 + height,
                 self.image_height/2 + pixel_y,
-                self.image_width,
+                200,
                 self.image_height/2 + pixel_y), fill=WallpaperImage.foreground)
             draw.line((
-                self.image_width - height,
+                200 + height,
                 self.image_height/2 - pixel_y,
-                self.image_width,
+                200,
                 self.image_height/2 - pixel_y), fill=WallpaperImage.foreground)
-
+        draw.line((200, 0, 200, 1440), fill=WallpaperImage.foreground)
 
     def show(self):
         self.image.show()
@@ -187,5 +196,5 @@ max_ay = mapper.pixel_to_real(mapper.dx, 1440, 0)[1]
 ays = np.arange(0, max_ay, ones_y)
 pys = [mapper.real_to_pixel(0, ay, 0)[1] - 720 for ay in ays]
 image.draw_scale_right(pys, 20, 50)
-# image.show()
-image.save()
+image.show()
+# image.save()
