@@ -51,10 +51,10 @@ class WallpaperImage:
         draw = ImageDraw.Draw(self.image)
         for i, pixel_x in enumerate(pixels_x):
             if i%10 == 0:
-                draw.line((pixel_x, 720-height_tens/2, pixel_x, 720+height_tens/2), fill=WallpaperImage.foreground)
+                draw.line((pixel_x, 720-height_tens/2, pixel_x, 720+height_tens/2), fill="white")
             else:
-                draw.line((pixel_x, 720-height_ones/2, pixel_x, 720+height_ones/2), fill=WallpaperImage.foreground)
-        draw.line((200, 720, 3440, 720), fill=WallpaperImage.foreground)
+                draw.line((pixel_x, 720-height_ones/2, pixel_x, 720+height_ones/2), fill="white")
+        draw.line((200, 720, 3440, 720), fill="white")
 
     def draw_scale_right(self, pixels_y, height_ones, height_tens):
         draw = ImageDraw.Draw(self.image)
@@ -68,13 +68,13 @@ class WallpaperImage:
                 200 + height,
                 self.image_height/2 + pixel_y,
                 200,
-                self.image_height/2 + pixel_y), fill=WallpaperImage.foreground)
+                self.image_height/2 + pixel_y), fill="white")
             draw.line((
                 200 + height,
                 self.image_height/2 - pixel_y,
                 200,
-                self.image_height/2 - pixel_y), fill=WallpaperImage.foreground)
-        draw.line((200, 0, 200, 1440), fill=WallpaperImage.foreground)
+                self.image_height/2 - pixel_y), fill="white")
+        draw.line((200, 0, 200, 1440), fill="white")
 
     def show(self):
         self.image.show()
