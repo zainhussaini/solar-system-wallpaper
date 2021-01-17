@@ -14,40 +14,67 @@ class WallpaperImage:
         self.image_height = image_height
         self.image = Image.new('RGBA', (image_width, image_height), WallpaperImage.background)
 
-    def add_stars(self, count):
+    def add_stars(self, pxys):
         # TODO: match actual stars and constellations
-        for i in range(count):
-            x = np.random.randint(0, self.image_width)
-            y = np.random.randint(0, self.image_height)
-            self.image.putpixel((x, y), (255, 255, 255))
+        for px, py in pxys:
+            self.image.putpixel((int(px), int(py)), (255, 255, 255))
 
-    def draw_circle(self, pixel_x, pixel_y, pixel_r, foreground=True):
-        if foreground == True:
-            color = WallpaperImage.foreground
-        else:
-            color = WallpaperImage.background
+            # make 10% stars extra big
+            if np.random.uniform(0, 1) < 0.1:
+                for i in range(2):
+                    for j in range(2):
+                        if int(px+i) < self.image_width and int(py+j) < self.image_height:
+                            self.image.putpixel((int(px+i), int(py+j)), (255, 255, 255))
 
-        draw = ImageDraw.Draw(self.image)
+    def draw_circle(self, pixel_x, pixel_y, pixel_r):
+        antialias_scale = 8
+
+        pixel_x = int(pixel_x + 0.5)
+        pixel_y = int(pixel_y + 0.5)
+        pixel_r = int(pixel_r + 0.5)
+
+        upscale_size = 2*pixel_r*antialias_scale
+        mask = Image.new('RGBA', (upscale_size, upscale_size), WallpaperImage.background)
+        draw = ImageDraw.Draw(mask)
+        bound = (0, 0, upscale_size, upscale_size)
+        draw.ellipse(bound, fill=WallpaperImage.foreground, outline=WallpaperImage.background)
+        mask = mask.resize((2*pixel_r, 2*pixel_r), Image.ANTIALIAS)
+
         bound = (
             pixel_x - pixel_r,
             pixel_y - pixel_r,
             pixel_x + pixel_r,
             pixel_y + pixel_r)
-        draw.ellipse(bound, fill=color, outline=color)
+        self.image.paste(mask, box=bound)
 
     def draw_empty_circle(self, pixel_x, pixel_y, pixel_r, thickness):
-        self.draw_circle(pixel_x, pixel_y, pixel_r, True)
-        self.draw_circle(pixel_x, pixel_y, pixel_r - thickness, False)
+        antialias_scale = 8
 
-    # def draw_scale_top(self, pixels_x, height_ones, height_tens):
-    #     draw = ImageDraw.Draw(self.image)
-    #     for i, pixel_x in enumerate(pixels_x):
-    #         if i%10 == 0:
-    #             draw.line((pixel_x, 0, pixel_x, height_tens), fill=WallpaperImage.foreground)
-    #         else:
-    #             draw.line((pixel_x, 0, pixel_x, height_ones), fill=WallpaperImage.foreground)
+        pixel_x = int(pixel_x + 0.5)
+        pixel_y = int(pixel_y + 0.5)
+        pixel_r = int(pixel_r + 0.5)
 
-    def draw_scale_top(self, pixels_x, height_ones, height_tens):
+        upscale_size = 2*pixel_r*antialias_scale
+        mask = Image.new('RGBA', (upscale_size, upscale_size), WallpaperImage.background)
+        draw = ImageDraw.Draw(mask)
+        bound = (0, 0, upscale_size, upscale_size)
+        draw.ellipse(bound, fill=WallpaperImage.foreground, outline=WallpaperImage.background)
+        bound = (
+            antialias_scale*thickness,
+            antialias_scale*thickness,
+            upscale_size - antialias_scale*thickness,
+            upscale_size - antialias_scale*thickness)
+        draw.ellipse(bound, fill=WallpaperImage.background, outline=WallpaperImage.background)
+        mask = mask.resize((2*pixel_r, 2*pixel_r), Image.ANTIALIAS)
+
+        bound = (
+            pixel_x - pixel_r,
+            pixel_y - pixel_r,
+            pixel_x + pixel_r,
+            pixel_y + pixel_r)
+        self.image.paste(mask, box=bound)
+
+    def draw_scale_horizontal(self, pixels_x, height_ones, height_tens):
         draw = ImageDraw.Draw(self.image)
         for i, pixel_x in enumerate(pixels_x):
             if i%10 == 0:
@@ -56,7 +83,7 @@ class WallpaperImage:
                 draw.line((pixel_x, 720-height_ones/2, pixel_x, 720+height_ones/2), fill="white")
         draw.line((200, 720, 3440, 720), fill="white")
 
-    def draw_scale_right(self, pixels_y, height_ones, height_tens):
+    def draw_scale_vertical(self, pixels_y, height_ones, height_tens):
         draw = ImageDraw.Draw(self.image)
         for i, pixel_y in enumerate(pixels_y):
             if i%10 == 0:
@@ -116,14 +143,26 @@ class CoordinateMapper:
         self.ey = res[1][0]
 
     def pixel_to_real(self, px, py, pr):
-        ax = np.power((px - self.dx)/self.sx, 1/self.ex)
-        ay = np.power((py - self.dy)/self.sy, 1/self.ey)
+        if px >= self.dx:
+            ax = np.power((px - self.dx)/self.sx, 1/self.ex)
+        else:
+            ax = -np.power((self.dx - px)/self.sx, 1/self.ex)
+        if py >= self.dy:
+            ay = np.power((py - self.dy)/self.sy, 1/self.ey)
+        else:
+            ay = -np.power((self.dy - py)/self.sy, 1/self.ey)
         ar = np.power(py/self.sy, 1/self.ey)
         return (ax, ay, ar)
 
     def real_to_pixel(self, ax, ay, ar):
-        px = self.dx + self.sx*np.power(ax, self.ex)
-        py = self.dy + self.sy*np.power(ay, self.ey)
+        if ax >= 0:
+            px = self.dx + self.sx*np.power(ax, self.ex)
+        else:
+            px = self.dx - self.sx*np.power(-ax, self.ex)
+        if ay >= 0:
+            py = self.dy + self.sy*np.power(ay, self.ey)
+        else:
+            py = self.dy - self.sy*np.power(-ay, self.ey)
         pr = self.sy*np.power(ar, self.ey)
         return (px, py, pr)
 
@@ -137,7 +176,7 @@ df_planets.set_index("PLANET", inplace=True)
 df_moons.set_index("MOON", inplace=True)
 
 # list of tuples: (location x, location y, radius, solid)
-circles = []
+circles = [(0, 0, sun_radius, False)]
 
 for index, row in df_planets.iterrows():
     location_x = row["DIST FROM SUN (km)"]
@@ -157,8 +196,8 @@ for index, row in df_moons.iterrows():
 mapper = CoordinateMapper(200, 720)
 # mapper.calc_r(150, df_planets["RADIUS (km)"]["Jupiter"])
 mapper.calc_x(
-    400, df_planets["DIST FROM SUN (km)"]["Mercury"],
-    3000, df_planets["DIST FROM SUN (km)"]["Neptune"])
+    600, df_planets["DIST FROM SUN (km)"]["Mercury"],
+    3200, df_planets["DIST FROM SUN (km)"]["Neptune"])
 mapper.calc_y(
     720+100, df_planets["RADIUS (km)"]["Jupiter"],
     720+600, df_moons["DIST FROM PLANET (km)"]["Iapetus"])
@@ -166,13 +205,18 @@ mapper.calc_y(
 
 """ make image """
 image = WallpaperImage()
-image.add_stars(1000)
 
-# draw sun
-px, py, pr = mapper.real_to_pixel(0, 0, sun_radius)
-# adjust sun px so it touches (0, 0) point
-px = 200 - pr
-image.draw_empty_circle(px, py, pr, 8)
+# draw stars
+num = 3000
+axmin, aymin, _ = mapper.pixel_to_real(0, 0, 0)
+axmax, aymax, _ = mapper.pixel_to_real(3440, 1440, 0)
+axs = np.random.uniform(axmin, axmax, num)
+ays = np.random.uniform(aymin, aymax, num)
+pxys = []
+for i in range(num):
+    px, py, _ = mapper.real_to_pixel(axs[i], ays[i], 0)
+    pxys.append((px, py))
+image.add_stars(pxys)
 
 # draw planets + moons
 for ax, ay, ar, solid in circles:
@@ -182,18 +226,19 @@ for ax, ay, ar, solid in circles:
     else:
         image.draw_empty_circle(px, py, pr, 8)
 
-# draw top scale
-ones_x = 1e8
+# draw horizontal scale
+ones_x = 5e7
 max_ax = mapper.pixel_to_real(3440, mapper.dy, 0)[0]
 axs = np.arange(0, max_ax, ones_x)
 pxs = [mapper.real_to_pixel(ax, 0, 0)[0] for ax in axs]
-image.draw_scale_top(pxs, 20, 50)
+image.draw_scale_horizontal(pxs, 20, 50)
 
-# draw right scale
+# draw vertical scale
 ones_y = 1e5
 max_ay = mapper.pixel_to_real(mapper.dx, 1440, 0)[1]
 ays = np.arange(0, max_ay, ones_y)
 pys = [mapper.real_to_pixel(0, ay, 0)[1] - 720 for ay in ays]
-image.draw_scale_right(pys, 20, 50)
+image.draw_scale_vertical(pys, 20, 50)
+
+image.save()
 image.show()
-# image.save()
