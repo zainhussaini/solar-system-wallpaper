@@ -74,6 +74,57 @@ class WallpaperImage:
         self.image.save('wallpaper.png')
 
 
+class CoordinateMapper:
+    def __init__(self, px0, py0):
+        """px0 is pixel corresponding to 0 x location, similar for py0"""
+        self.sr = None
+        self.dx = px0
+        self.sx = None
+        self.ex = None
+        self.dy = py0
+        self.sy = None
+        self.ey = None
+
+    def calc_r(self, pr, ar):
+        """Calculates radius mapping from pixel radius and real radius"""
+        self.sr = pr/ar
+
+    def calc_x(self, px1, ax1, px2, ax2):
+        A = np.array([
+            [1/np.log(ax1), 1],
+            [1/np.log(ax2), 1]])
+        b = np.array([
+            [np.log(px1-self.dx)/np.log(ax1)],
+            [np.log(px2-self.dx)/np.log(ax2)]])
+        res = np.linalg.inv(A) @ b
+        self.sx = np.exp(res[0][0])
+        self.ex = res[1][0]
+
+    def calc_y(self, py1, ay1, py2, ay2):
+        A = np.array([
+            [1/np.log(ay1), 1],
+            [1/np.log(ay2), 1]])
+        b = np.array([
+            [np.log(py1-self.dy)/np.log(ay1)],
+            [np.log(py2-self.dy)/np.log(ay2)]])
+        res = np.linalg.inv(A) @ b
+        self.sy = np.exp(res[0][0])
+        self.ey = res[1][0]
+
+    def pixel_to_real(self, px, py, pr):
+        ax = np.power((px - self.dx)/self.sx, 1/self.ex)
+        ay = np.power((py - self.dy)/self.sy, 1/self.ey)
+        ar = pr/self.sr
+        return (ax, ay, ar)
+
+    def real_to_pixel(self, ax, ay, ar):
+        px = self.dx + self.sx*np.power(ax, self.ex)
+        py = self.dy + self.sy*np.power(ay, self.ey)
+        pr = self.sr*ar
+        return (px, py, pr)
+
+
+""" parse csv files """
 sun_radius = 696340
 df_planets = pd.read_csv('planets.csv')
 df_moons = pd.read_csv('moons.csv')
@@ -82,7 +133,7 @@ df_planets.set_index("PLANET", inplace=True)
 df_moons.set_index("MOON", inplace=True)
 
 # list of tuples: (location x, location y, radius, solid)
-circles = [(0, 0, sun_radius, False)]
+circles = []
 
 for index, row in df_planets.iterrows():
     location_x = row["DIST FROM SUN (km)"]
@@ -97,86 +148,44 @@ for index, row in df_moons.iterrows():
     radius = row["RADIUS (km)"]
     circles.append((location_x, location_y, radius, True))
 
-""" calculate radius parameters """
-jupiter_radius_pixels = 150
 
-jupiter_radius = df_planets["RADIUS (km)"]["Jupiter"]
-sr = jupiter_radius_pixels / jupiter_radius
+""" initialize mapper """
+mapper = CoordinateMapper(200, 720)
+mapper.calc_r(150, df_planets["RADIUS (km)"]["Jupiter"])
+mapper.calc_x(400, df_planets["DIST FROM SUN (km)"]["Mercury"], 3000, df_planets["DIST FROM SUN (km)"]["Neptune"])
+mapper.calc_y(720+200, df_moons["DIST FROM PLANET (km)"]["Miranda"], 720+600, df_moons["DIST FROM PLANET (km)"]["Iapetus"])
 
-""" calculate distance y parameters """
-max_moon_dist_pixels = 600
-min_moon_dist_pixels = 150
-
-# py = sy*np.power(y, ey)
-# s = ?
-# e = ?
-# py1 = s*np.power(y1, e)
-# py2 = s*np.power(y2, e)
-
-py1 = max_moon_dist_pixels
-py2 = min_moon_dist_pixels
-y1 = max(df_moons["DIST FROM PLANET (km)"])
-y2 = min(df_moons["DIST FROM PLANET (km)"])
-
-A = np.array([[1/np.log(y1), 1], [1/np.log(y2), 1]])
-b = np.array([[np.log(py1)/np.log(y1)], [np.log(py2)/np.log(y2)]])
-res = np.linalg.inv(A) @ b
-sy = np.exp(res[0][0])
-ey = res[1][0]
-
-""" calculate distance x parameters """
-sun_visibility_pixels = 200
-neptune_loc_pixels = 3000
-mercury_dist_pixels = 200 # distance from sun
-
-# px = dx + sx*np.power(x, ex)
-
-""" NOTE THIS IS A UNCONSISTENT CHANGE!!! """
-# dx = sun_visibility_pixels - sun_radius*sr
-dx = sun_visibility_pixels
-
-py1 = mercury_dist_pixels + sun_visibility_pixels - dx
-py2 = neptune_loc_pixels - dx
-y1 = df_planets["DIST FROM SUN (km)"]["Mercury"]
-y2 = df_planets["DIST FROM SUN (km)"]["Neptune"]
-
-A = np.array([[1/np.log(y1), 1], [1/np.log(y2), 1]])
-b = np.array([[np.log(py1)/np.log(y1)], [np.log(py2)/np.log(y2)]])
-res = np.linalg.inv(A) @ b
-sx = np.exp(res[0][0])
-ex = res[1][0]
 
 """ make image """
 image = WallpaperImage()
-image.add_stars(2000)
-for location_x, location_y, radius, solid in circles:
-    location_x_pixel = dx + sx*np.power(location_x, ex)
-    location_y_pixel = image.image_height/2 + sy*np.power(location_y, ey)
-    radius_pixel = sr*radius
+image.add_stars(1000)
 
-    """ NOTE THIS IS A UNCONSISTENT CHANGE!!! """
-    if location_x == 0:
-        location_x_pixel = sun_visibility_pixels - sun_radius*sr
+# draw sun
+px, py, pr = mapper.real_to_pixel(0, 0, sun_radius)
+# adjust sun px so it touches (0, 0) point
+px = 200 - pr
+image.draw_empty_circle(px, py, pr, 8)
 
+# draw planets + moons
+for ax, ay, ar, solid in circles:
+    px, py, pr = mapper.real_to_pixel(ax, ay, ar)
     if solid:
-        image.draw_circle(location_x_pixel, location_y_pixel, radius_pixel)
+        image.draw_circle(px, py, pr)
     else:
-        image.draw_empty_circle(location_x_pixel, location_y_pixel, radius_pixel, 8)
+        image.draw_empty_circle(px, py, pr, 8)
 
-
+# draw top scale
 ones_x = 1e8
-location_max = np.power((3440 - dx)/sx, 1/ex)
-ints = np.arange(0, int(np.ceil(location_max/ones_x)))
-x_coords = dx + sx*np.power(ints*ones_x, ex)
-image.draw_scale_top(x_coords, 20, 50)
+max_ax = mapper.pixel_to_real(3440, mapper.dy, 0)[0]
+axs = np.arange(0, max_ax, ones_x)
+pxs = [mapper.real_to_pixel(ax, 0, 0)[0] for ax in axs]
+image.draw_scale_top(pxs, 20, 50)
 
-# TODO: scale shouldn't be 2 times something right?
-ones_y = 2e5
-location_max = np.power(720/sy, 1/ey)
-ints = np.arange(0, int(np.ceil(location_max/ones_y)))
-y_coords = sy*np.power(ints*ones_y, ey)
-image.draw_scale_right(y_coords, 20, 50)
-
-
-image.show()
+# draw right scale
+ones_y = 3e5
+max_ay = mapper.pixel_to_real(mapper.dx, 1440, 0)[1]
+ays = np.arange(0, max_ay, ones_y)
+pys = [mapper.real_to_pixel(0, ay, 0)[1] - 720 for ay in ays]
+image.draw_scale_right(pys, 20, 50)
+# image.show()
 image.save()
