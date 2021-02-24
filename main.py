@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image, ImageDraw
 
+np.random.seed(0)
+
 
 class WallpaperImage:
     background = (1, 28, 44)
