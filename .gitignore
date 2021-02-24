@@ -130,3 +130,6 @@ dmypy.json
 
 # quick file for testing code
 quick.py
+
+# .DS_Store
+.DS_Store

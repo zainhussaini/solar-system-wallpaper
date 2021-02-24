@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image, ImageDraw
 
-np.random.seed(0)
-
 
 class WallpaperImage:
     background = (1, 28, 44)
@@ -171,8 +169,8 @@ class CoordinateMapper:
 
 """ parse csv files """
 sun_radius = 696340
-df_planets = pd.read_csv('planets.csv')
-df_moons = pd.read_csv('moons.csv')
+df_planets = pd.read_csv('data/planets.csv')
+df_moons = pd.read_csv('data/moons.csv')
 
 df_planets.set_index("PLANET", inplace=True)
 df_moons.set_index("MOON", inplace=True)
@@ -194,53 +192,55 @@ for index, row in df_moons.iterrows():
     circles.append((location_x, location_y, radius, True))
 
 
-""" initialize mapper """
-mapper = CoordinateMapper(200, 720)
-# mapper.calc_r(150, df_planets["RADIUS (km)"]["Jupiter"])
-mapper.calc_x(
-    600, df_planets["DIST FROM SUN (km)"]["Mercury"],
-    3200, df_planets["DIST FROM SUN (km)"]["Neptune"])
-mapper.calc_y(
-    720+100, df_planets["RADIUS (km)"]["Jupiter"],
-    720+600, df_moons["DIST FROM PLANET (km)"]["Iapetus"])
+if __name__ == "__main__":
+    np.random.seed(0)
+    
+    """ initialize mapper """
+    mapper = CoordinateMapper(200, 720)
+    # mapper.calc_r(150, df_planets["RADIUS (km)"]["Jupiter"])
+    mapper.calc_x(
+        600, df_planets["DIST FROM SUN (km)"]["Mercury"],
+        3200, df_planets["DIST FROM SUN (km)"]["Neptune"])
+    mapper.calc_y(
+        720+100, df_planets["RADIUS (km)"]["Jupiter"],
+        720+600, df_moons["DIST FROM PLANET (km)"]["Iapetus"])
 
+    """ make image """
+    image = WallpaperImage()
 
-""" make image """
-image = WallpaperImage()
+    # draw stars
+    num = 3000
+    axmin, aymin, _ = mapper.pixel_to_real(0, 0, 0)
+    axmax, aymax, _ = mapper.pixel_to_real(3440, 1440, 0)
+    axs = np.random.uniform(axmin, axmax, num)
+    ays = np.random.uniform(aymin, aymax, num)
+    pxys = []
+    for i in range(num):
+        px, py, _ = mapper.real_to_pixel(axs[i], ays[i], 0)
+        pxys.append((px, py))
+    image.add_stars(pxys)
 
-# draw stars
-num = 3000
-axmin, aymin, _ = mapper.pixel_to_real(0, 0, 0)
-axmax, aymax, _ = mapper.pixel_to_real(3440, 1440, 0)
-axs = np.random.uniform(axmin, axmax, num)
-ays = np.random.uniform(aymin, aymax, num)
-pxys = []
-for i in range(num):
-    px, py, _ = mapper.real_to_pixel(axs[i], ays[i], 0)
-    pxys.append((px, py))
-image.add_stars(pxys)
+    # draw planets + moons
+    for ax, ay, ar, solid in circles:
+        px, py, pr = mapper.real_to_pixel(ax, ay, ar)
+        if solid:
+            image.draw_circle(px, py, pr)
+        else:
+            image.draw_empty_circle(px, py, pr, 8)
 
-# draw planets + moons
-for ax, ay, ar, solid in circles:
-    px, py, pr = mapper.real_to_pixel(ax, ay, ar)
-    if solid:
-        image.draw_circle(px, py, pr)
-    else:
-        image.draw_empty_circle(px, py, pr, 8)
+    # draw horizontal scale
+    ones_x = 5e7
+    max_ax = mapper.pixel_to_real(3440, mapper.dy, 0)[0]
+    axs = np.arange(0, max_ax, ones_x)
+    pxs = [mapper.real_to_pixel(ax, 0, 0)[0] for ax in axs]
+    image.draw_scale_horizontal(pxs, 20, 50)
 
-# draw horizontal scale
-ones_x = 5e7
-max_ax = mapper.pixel_to_real(3440, mapper.dy, 0)[0]
-axs = np.arange(0, max_ax, ones_x)
-pxs = [mapper.real_to_pixel(ax, 0, 0)[0] for ax in axs]
-image.draw_scale_horizontal(pxs, 20, 50)
+    # draw vertical scale
+    ones_y = 1e5
+    max_ay = mapper.pixel_to_real(mapper.dx, 1440, 0)[1]
+    ays = np.arange(0, max_ay, ones_y)
+    pys = [mapper.real_to_pixel(0, ay, 0)[1] - 720 for ay in ays]
+    image.draw_scale_vertical(pys, 20, 50)
 
-# draw vertical scale
-ones_y = 1e5
-max_ay = mapper.pixel_to_real(mapper.dx, 1440, 0)[1]
-ays = np.arange(0, max_ay, ones_y)
-pys = [mapper.real_to_pixel(0, ay, 0)[1] - 720 for ay in ays]
-image.draw_scale_vertical(pys, 20, 50)
-
-image.save()
-image.show()
+    image.save()
+    image.show()
