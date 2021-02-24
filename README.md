@@ -1,8 +1,12 @@
 # SolarSystemWallpaper
-Code to generate a solar system wallpaper with accurate scaling
+Code to generate a solar system wallpaper with accurate scaling.
 
+## Image
 ![generated wallpaper](https://github.com/zainhussaini/SolarSystemWallpaper/blob/main/wallpaper.png?raw=true)
 
-Reference image
+## Features
+Proportional scaling would not generate the most interesting wallpaper (take a look at [if the moon were only 1 pixel](https://joshworth.com/dev/pixelspace/pixelspace_solarsystem.html) to see what it would have to look like). Logarithmic scaling doesn't quite work since distance of 1 unit maps to 0, and negative units don't make sense for distances either. Instead a "root" scale was used instead which raises distance from the origin to an exponent less than 1, with the exponent chosen to fit everything nicely.
 
-credit to u/DJ-Anakin who edited the reference image [here](https://www.reddit.com/r/WidescreenWallpaper/comments/k7vei3/solar_system_like_goodspeed_deskmat/gexdx4w?utm_source=share&utm_medium=web2x&context=3)
+Horizontal scaling (along x-axis) shows the distance of planets from the sun. Vertical scaling (along y-axis) is used to show the distance of moons from the planet. This scale is also used for the planet and sun radii. Note that the horizontal scaling is different than the vertical one so the planets and moons could actually be visible.
+
+The stars are distributed to reflect the scaling, with their density along the x and y axes showing the density changes in the scale.
