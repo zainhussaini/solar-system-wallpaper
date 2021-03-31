@@ -1,11 +1,16 @@
 # SolarSystemWallpaper
 Code to generate a solar system wallpaper with accurate scaling.
 
-## Image
+## Images
+### Ultrawide 3440x1440
+
 ![ultrawide wallpaper](https://github.com/zainhussaini/SolarSystemWallpaper/blob/main/wallpaper.png?raw=true)
 
-![dual monitor 1](https://github.com/zainhussaini/SolarSystemWallpaper/blob/main/wallpaper0.png?raw=true)
-![dual monitor 2](https://github.com/zainhussaini/SolarSystemWallpaper/blob/main/wallpaper1.png?raw=true)
+### Dual monitor 1920x1080
+
+Image 1| Image 2
+:-------------------------:|:-------------------------:
+![dual monitor 1](https://github.com/zainhussaini/SolarSystemWallpaper/blob/main/wallpaper0.png?raw=true)| ![dual monitor 2](https://github.com/zainhussaini/SolarSystemWallpaper/blob/main/wallpaper1.png?raw=true)
 
 ## Features
 Proportional scaling would not generate the most interesting wallpaper (take a look at [if the moon were only 1 pixel](https://joshworth.com/dev/pixelspace/pixelspace_solarsystem.html) to see what it would have to look like). Logarithmic scaling doesn't quite work since distance of 1 unit maps to 0, and negative units don't make sense for distances either. Instead a "root" scale was used instead which raises distance from the origin to an exponent less than 1, with the exponent chosen to fit everything nicely.
