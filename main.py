@@ -234,12 +234,11 @@ def load_data():
 
     return df_planets, df_moons, circles
 
-def generate_wallpaper(width, height, wide=False):
+def generate_wallpaper(width, height):
     """When wide is set to True, the x axis scaling uses sun radius as well"""
     # TODO: add checks to make sure nothing overlaps with set parameters
     # all of these are in pixels
     SUN_R = height/6 # radius of sun
-    MERCURY_X = SUN_R*1.5 # distance of mercury from sun center along x axis
     IAPETUS_Y = height*5/12 # distance of iapetus (furthest moon) along y axis of image from center
     NEPTUNE_X = width - SUN_R*2 # distance of neptune (furthest planet) from sun center along x axis
     EMPTY_CIRCLE_THICKNESS = height/120
@@ -263,16 +262,11 @@ def generate_wallpaper(width, height, wide=False):
     mapper = CoordinateMapper(SUN_R, height/2)
 
     mapper.calc_x(
-        SUN_R + MERCURY_X, df_planets["DIST FROM SUN (km)"]["Mercury"],
+        SUN_R*2, df_planets["RADIUS (km)"]["Sun"],
         SUN_R + NEPTUNE_X, df_planets["DIST FROM SUN (km)"]["Neptune"])
     mapper.calc_y(
         height/2 + SUN_R, df_planets["RADIUS (km)"]["Sun"],
         height/2 + IAPETUS_Y, df_moons["DIST FROM PLANET (km)"]["Iapetus"])
-
-    if wide:
-        mapper.calc_x(
-            SUN_R*2, df_planets["RADIUS (km)"]["Sun"],
-            SUN_R + NEPTUNE_X, df_planets["DIST FROM SUN (km)"]["Neptune"])
     # use same scaling as x axis
     # mapper.calc_y(
     #     height/2 + SUN_R + MERCURY_X, df_planets["DIST FROM SUN (km)"]["Mercury"],
@@ -321,5 +315,5 @@ if __name__ == "__main__":
     image = generate_wallpaper(3440, 1440)
     image.save()
 
-    image = generate_wallpaper(2*1920, 1080, True)
+    image = generate_wallpaper(2*1920, 1080)
     image.save(monitors=2)
