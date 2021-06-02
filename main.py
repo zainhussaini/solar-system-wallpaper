@@ -117,14 +117,14 @@ class WallpaperImage:
         if monitors < 1:
             raise Exception("invalid number of monitors")
         elif monitors == 1:
-            self.image.save(f'{self.image.width}x{self.image.height}.png')
+            self.image.save(f'images/{self.image.width}x{self.image.height}.png')
             pass
         else:
             for i in range(monitors):
                 image_part = self.image.crop((
                     self.image.width*i//monitors, 0,
                     self.image.width*(i+1)//monitors, self.image.height))
-                image_part.save(f'{self.image.width//monitors}x{self.image.height}_part{i+1}.png')
+                image_part.save(f'images/{self.image.width//monitors}x{self.image.height}_part{i+1}.png')
 
 
 class CoordinateMapper:
@@ -319,21 +319,22 @@ def generate_wallpaper(width, height):
 def clear_pngs():
     import os
 
-    current_directory = os.path.abspath(os.getcwd())
-    print(f"Are you sure you want to delete all files that end with .png in {current_directory}?")
+    images_directory = os.path.join(os.path.abspath(os.getcwd()), "images")
+    print(f"Are you sure you want to delete all files that end with .png in {images_directory}?")
     if not input('Select yes/No: ').lower().startswith("y"):
         print("Not deleting any files")
         return
 
-    for item in os.listdir():
+    for item in os.listdir(images_directory):
         if item.endswith(".png"):
+            item = os.path.join(images_directory, item)
             print(f"Deleting {item}")
             os.remove(item)
 
 
 if __name__ == "__main__":
     # Dangerous, use only for development
-    clear_pngs()
+    # clear_pngs()
 
     generate_wallpaper(3440, 1440).save()
     generate_wallpaper(2*1920, 1080).save(monitors=2)
