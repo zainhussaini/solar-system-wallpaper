@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
+
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image, ImageDraw
 
@@ -116,9 +116,9 @@ class WallpaperImage:
 
         if monitors < 1:
             raise Exception("invalid number of monitors")
-        elif monitors == 1:
+
+        if monitors == 1:
             self.image.save(f'images/{self.image.width}x{self.image.height}.png')
-            pass
         else:
             for i in range(monitors):
                 image_part = self.image.crop((
