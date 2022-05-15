@@ -3,6 +3,7 @@
 import pandas as pd
 import numpy as np
 from PIL import Image, ImageDraw
+from tqdm import tqdm
 
 
 class WallpaperImage:
@@ -23,17 +24,18 @@ class WallpaperImage:
         self.draw_color = draw_color
         self.image = Image.new('RGBA', (image_width, image_height), background_color)
 
-    def add_stars(self, pxys):
-        # TODO: match actual stars and constellations
-        for px, py in pxys:
-            self.image.putpixel((int(px), int(py)), (255, 255, 255))
-
-            # make 10% stars extra big
-            if np.random.uniform(0, 1) < 0.1:
+    def add_stars(self, pxybs):
+        for px, py, b in pxybs:
+            if b == 0:
+                self.image.putpixel((int(px), int(py)), (255, 255, 255))
+            elif b == 1:
+                # make "bright" stars bigger
                 for i in range(2):
                     for j in range(2):
                         if int(px+i) < self.image_width and int(py+j) < self.image_height:
                             self.image.putpixel((int(px+i), int(py+j)), (255, 255, 255))
+            else:
+                raise NotImplemented(f"Brightness {b} not implemented")
 
     def draw_circle(self, pixel_x, pixel_y, pixel_r):
         antialias_scale = 8
@@ -110,7 +112,7 @@ class WallpaperImage:
     def show(self):
         self.image.show()
 
-    def save(self, monitors=1):
+    def save_monitor_split(self, monitors=1):
         """monitors is number of horizontal equal size/resolution monitors"""
         assert self.image.width % monitors == 0
 
@@ -125,6 +127,9 @@ class WallpaperImage:
                     self.image.width*i//monitors, 0,
                     self.image.width*(i+1)//monitors, self.image.height))
                 image_part.save(f'images/{self.image.width//monitors}x{self.image.height}_part{i+1}.png')
+
+    def save_video(self, frame):
+        self.image.save(f'video/{self.image.width}x{self.image.height}_{str(frame).zfill(4)}.png')
 
 
 class CoordinateMapper:
@@ -210,6 +215,36 @@ class CoordinateMapper:
         return (px, py, pr)
 
 
+class StarGenerator:
+    """Helper object to calculate star positions"""
+
+    def __init__(self, num_stars, mapper: CoordinateMapper, height, width, seed=0):
+        np.random.seed(seed)
+        self.mapper = mapper
+
+        # calculate uniform stars over real coordinates, corresponding to pixel corrdinate limits
+        axmin, aymin, _ = mapper.pixel_to_real(0, 0, 0)
+        axmax, aymax, _ = mapper.pixel_to_real(width, height, 0)
+
+        self.axs = np.random.uniform(axmin, axmax, num_stars)
+        self.ays = np.random.uniform(aymin, aymax, num_stars)
+        self.bs = np.random.randint(0, 2, num_stars)
+
+        self.axmin = axmin
+        self.axmax = axmax
+
+    def generate(self, ax_offset=0):
+        # offset then fit into range [axmin, aymin]
+        axs_offset = (self.axs + ax_offset - self.axmin) % (self.axmax - self.axmin) + self.axmin
+
+        pxys = []
+        for i in range(len(self.axs)):
+            px, py, _ = self.mapper.real_to_pixel(axs_offset[i], self.ays[i], 0)
+            b = self.bs[i]
+            pxys.append((px, py, b))
+        return pxys
+
+
 def load_data():
     # parse csv files
     df_planets = pd.read_csv('data/planets.csv')
@@ -237,7 +272,7 @@ def load_data():
 
     return df_planets, df_moons, circles
 
-def generate_wallpaper(width, height):
+def generate_video_images(width, height, num_frames):
     """When wide is set to True, the x axis scaling uses sun radius as well"""
     # TODO: add checks to make sure nothing overlaps with set parameters
     # all of these are in pixels
@@ -261,13 +296,15 @@ def generate_wallpaper(width, height):
     """ load data """
     df_planets, df_moons, circles = load_data()
 
-
     """ initialize mapper """
+    # the zero point is center of sun, which is SUN_R from left and height/2 from top
     mapper = CoordinateMapper(SUN_R, height/2)
 
+    # set scaling of x axis with right edge of sun and center of neptune
     mapper.calc_x(
         SUN_R*2, df_planets["RADIUS (km)"]["Sun"],
         SUN_R + NEPTUNE_X, df_planets["DIST FROM SUN (km)"]["Neptune"])
+    # set scaling of y axis with top edge of sun and center of furthest moon
     mapper.calc_y(
         height/2 + SUN_R, df_planets["RADIUS (km)"]["Sun"],
         height/2 + IAPETUS_Y, df_moons["DIST FROM PLANET (km)"]["Iapetus"])
@@ -276,54 +313,51 @@ def generate_wallpaper(width, height):
     #     height/2 + SUN_R + MERCURY_X, df_planets["DIST FROM SUN (km)"]["Mercury"],
     #     height/2 + SUN_R + NEPTUNE_X, df_planets["DIST FROM SUN (km)"]["Neptune"])
 
-    """ make image """
-    image = WallpaperImage(width, height, background_color, draw_color)
+    """ initialize star generator """
+    star_gen = StarGenerator(NUM_STARS, mapper, height, width)
+    ax_offset = (star_gen.axmax - star_gen.axmin)/num_frames
 
-    # draw stars
-    np.random.seed(0)
-    axmin, aymin, _ = mapper.pixel_to_real(0, 0, 0)
-    axmax, aymax, _ = mapper.pixel_to_real(width, height, 0)
-    axs = np.random.uniform(axmin, axmax, NUM_STARS)
-    ays = np.random.uniform(aymin, aymax, NUM_STARS)
-    pxys = []
-    for i in range(NUM_STARS):
-        px, py, _ = mapper.real_to_pixel(axs[i], ays[i], 0)
-        pxys.append((px, py))
-    image.add_stars(pxys)
+    for frame_index in tqdm(range(num_frames)):
+        image = WallpaperImage(width, height, background_color, draw_color)
 
-    # draw horizontal scale
-    ones_x = 5e7
-    max_ax = mapper.pixel_to_real(width, mapper.dy, 0)[0]
-    axs = np.arange(0, max_ax, ones_x)
-    pxs = [mapper.real_to_pixel(ax, 0, 0)[0] for ax in axs]
-    image.draw_scale_horizontal(pxs, X_TICKS_HEIGHT_ONES, X_TICKS_HEIGHT_TENS)
+        # draw stars
+        pxybs = star_gen.generate(ax_offset*frame_index)
+        image.add_stars(pxybs)
 
-    # draw vertical scale
-    ones_y = 2e5
-    max_ay = mapper.pixel_to_real(mapper.dx, width, 0)[1]
-    ays = np.arange(0, max_ay, ones_y)
-    pys = [mapper.real_to_pixel(0, ay, 0)[1] - height/2 for ay in ays]
-    image.draw_scale_vertical(mapper.dx, pys, Y_TICKS_HEIGHT_ONES, Y_TICKS_HEIGHT_TENS)
+        # draw horizontal scale
+        ones_x = 5e7
+        max_ax = mapper.pixel_to_real(width, mapper.dy, 0)[0]
+        axs = np.arange(0, max_ax, ones_x)
+        pxs = [mapper.real_to_pixel(ax, 0, 0)[0] for ax in axs]
+        image.draw_scale_horizontal(pxs, X_TICKS_HEIGHT_ONES, X_TICKS_HEIGHT_TENS)
 
-    # draw planets + moons
-    for ax, ay, ar, solid in circles:
-        px, py, pr = mapper.real_to_pixel(ax, ay, ar)
-        if solid:
-            image.draw_circle(px, py, pr)
-        else:
-            image.draw_empty_circle(px, py, pr, EMPTY_CIRCLE_THICKNESS)
+        # draw vertical scale
+        ones_y = 2e5
+        max_ay = mapper.pixel_to_real(mapper.dx, width, 0)[1]
+        ays = np.arange(0, max_ay, ones_y)
+        pys = [mapper.real_to_pixel(0, ay, 0)[1] - height/2 for ay in ays]
+        image.draw_scale_vertical(mapper.dx, pys, Y_TICKS_HEIGHT_ONES, Y_TICKS_HEIGHT_TENS)
 
-    return image
+        # draw planets + moons
+        for ax, ay, ar, solid in circles:
+            px, py, pr = mapper.real_to_pixel(ax, ay, ar)
+            if solid:
+                image.draw_circle(px, py, pr)
+            else:
+                image.draw_empty_circle(px, py, pr, EMPTY_CIRCLE_THICKNESS)
+
+        image.save_video(frame_index)
 
 
-def clear_pngs():
+def clear_pngs(directory, force=False):
     import os
 
-    images_directory = os.path.join(os.path.abspath(os.getcwd()), "images")
-    print(f"Are you sure you want to delete all files that end with .png in {images_directory}?")
-    if not input('Select yes/No: ').lower().startswith("y"):
-        print("Not deleting any files")
-        return
+    images_directory = os.path.join(os.path.abspath(os.getcwd()), directory)
+    if not force:
+        print(f"Are you sure you want to delete all files that end with .png in {images_directory}?")
+        if not input('Select yes/No: ').lower().startswith("y"):
+            print("Not deleting any files")
+            return
 
     for item in os.listdir(images_directory):
         if item.endswith(".png"):
@@ -334,8 +368,9 @@ def clear_pngs():
 
 if __name__ == "__main__":
     # Dangerous, use only for development
-    # clear_pngs()
+    clear_pngs("video", force=True)
 
-    generate_wallpaper(3440, 1440).save()
-    generate_wallpaper(2*1920, 1080).save(monitors=2)
-    generate_wallpaper(2*3840, 2160).save(monitors=2)
+    generate_video_images(3440, 1440, 60*10)
+    # generate_wallpaper(3440, 1440).save_monitor_split()
+    # generate_wallpaper(2*1920, 1080).save_monitor_split(2)
+    # generate_wallpaper(2*3840, 2160).save_monitor_split(2)
