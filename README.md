@@ -4,19 +4,19 @@ Code to generate a solar system wallpaper with accurate scaling.
 ## Images
 ### Ultrawide 3440x1440
 
-![ultrawide wallpaper](https://raw.githubusercontent.com/zainhussaini/solar-system-wallpaper/main/images/3440x1440.png)
+![ultrawide wallpaper](https://drive.google.com/file/d/1cxd_JfTHP5y0otNQ2z1oeDXdzO51BKeJ/preview)
 
 ### Dual monitor 1920x1080
 
 Image 1| Image 2
 :-------------------------:|:-------------------------:
-![dual monitor 1](https://raw.githubusercontent.com/zainhussaini/solar-system-wallpaper/main/images/1920x1080_part1.png)| ![dual monitor 2](https://raw.githubusercontent.com/zainhussaini/solar-system-wallpaper/main/images/1920x1080_part2.png)
+![dual monitor 1](https://drive.google.com/file/d/13c6XMzbPpuF3-7OryUxL-Gqw8CiOu-e4/preview)| ![dual monitor 2](https://drive.google.com/file/d/1Uhicz3rfwuzSLcJ3vc10g5H8B7tBr4l7/preview)
 
 ### Dual monitor 3840x2160
 
 Image 1| Image 2
 :-------------------------:|:-------------------------:
-![dual monitor 1](https://raw.githubusercontent.com/zainhussaini/solar-system-wallpaper/main/images/3840x2160_part1.png)| ![dual monitor 2](https://raw.githubusercontent.com/zainhussaini/solar-system-wallpaper/main/images/3840x2160_part2.png)
+![dual monitor 1](https://drive.google.com/file/d/1P1yO5OX8R7pgkuXMqpHmganphu-k2K1D/preview)| ![dual monitor 2](https://drive.google.com/file/d/1x0ffuhgtBPGyvU8qizFH6vt1pO0aWtit/preview)
 
 ## Features
 Proportional scaling would not generate the most interesting wallpaper (take a look at [if the moon were only 1 pixel](https://joshworth.com/dev/pixelspace/pixelspace_solarsystem.html) to see what it would have to look like). Logarithmic scaling doesn't quite work since distance of 1 unit maps to 0, and distances less than 1 map to negative units which doesn't make sense for distances either. Instead a "root" scale was used instead which raises distance from the origin to an exponent less than 1, with the exponent chosen to fit everything nicely.
