@@ -4,19 +4,19 @@ Code to generate a solar system wallpaper with accurate scaling.
 ## Images
 ### Ultrawide 3440x1440
 
-![ultrawide wallpaper](images\3440x1440.png)
+![ultrawide wallpaper](images/3440x1440.png)
 
 ### Dual monitor 1920x1080
 
 Image 1| Image 2
 :-------------------------:|:-------------------------:
-![dual monitor 1](images\1920x1080_part1of2.png)| ![dual monitor 2](images\1920x1080_part2of2.png)
+![dual monitor 1](images/1920x1080_part1of2.png)| ![dual monitor 2](images/1920x1080_part2of2.png)
 
 ### Dual monitor 3840x2160
 
 Image 1| Image 2
 :-------------------------:|:-------------------------:
-![dual monitor 1](images\3840x2160_part1of2.png)| ![dual monitor 2](images\3840x2160_part2of2.png)
+![dual monitor 1](images/3840x2160_part1of2.png)| ![dual monitor 2](images/3840x2160_part2of2.png)
 
 ## Features
 Proportional scaling would not generate the most interesting wallpaper (take a look at [if the moon were only 1 pixel](https://joshworth.com/dev/pixelspace/pixelspace_solarsystem.html) to see what it would have to look like). Logarithmic scaling doesn't quite work since distance of 1 unit maps to 0, and distances less than 1 map to negative units which doesn't make sense for distances either. Instead a "root" scale was used instead which raises distance from the origin to an exponent less than 1, with the exponent chosen to fit everything nicely.
