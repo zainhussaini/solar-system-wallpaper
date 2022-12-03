@@ -124,7 +124,7 @@ class WallpaperImage:
                 image_part = self.image.crop((
                     self.image.width*i//monitors, 0,
                     self.image.width*(i+1)//monitors, self.image.height))
-                image_part.save(f'images/{self.image.width//monitors}x{self.image.height}_part{i+1}.png')
+                image_part.save(f'images/{self.image.width//monitors}x{self.image.height}_part{i+1}of{monitors}.png')
 
 
 class CoordinateMapper:
